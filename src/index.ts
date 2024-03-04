@@ -150,7 +150,7 @@ const nmsSortedBboxes = (faceObjects: FaceObject[], nmsThreshold: number) => {
   return picked
 }
 
-const createCanvas = (width: number, height: number) => {
+export const createCanvas = (width: number, height: number) => {
   if (typeof OffscreenCanvas !== 'undefined') {
     return new OffscreenCanvas(width, height)
   } else {
