@@ -210,7 +210,8 @@ export default class Retinaface {
     const canvas = createCanvas(this.width, this.height)
     const ctx = canvas.getContext('2d')! as CanvasRenderingContext2D
     const r = { left: 0, top: 0, width: image.width, height: image.height, ...rect }
-    ctx.drawImage(image, r.left, r.top, r.width, r.height, 0, 0, this.width, this.height)
-    return [ctx.getImageData(0, 0, this.width, this.height), Math.min(this.width / image.width, this.height / image.height)]
+    const scale = Math.min(this.width / image.width, this.height / image.height)
+    ctx.drawImage(image, r.left, r.top, r.width, r.height, 0, 0, image.width * scale | 0, image.height * scale | 0)
+    return [ctx.getImageData(0, 0, this.width, this.height), scale]
   }
 }
