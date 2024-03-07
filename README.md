@@ -25,7 +25,7 @@ import imagePath from './R.jpg'
 
 ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/'
 
-const retinaface = new Retinaface(await ort.InferenceSession.create(modelPath))
+const retinaface = new Retinaface(await ort.InferenceSession.create(modelPath), ort.Tensor)
 
 const image = new Image()
 image.src = imagePath

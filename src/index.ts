@@ -1,4 +1,4 @@
-import { type InferenceSession, Tensor } from 'onnxruntime-web'
+import type { InferenceSession, Tensor } from 'onnxruntime-web'
 
 export interface FaceObject {
   rect: [number, number, number, number]
@@ -162,7 +162,7 @@ export const createCanvas = (width: number, height: number) => {
 }
 
 export default class Retinaface {
-  public constructor (private readonly session: InferenceSession, public readonly width = 512, public readonly height = 512) {}
+  public constructor (private readonly session: InferenceSession, private readonly tensorClass: typeof Tensor, public readonly width = 512, public readonly height = 512) {}
 
   public detect = async (imageData: ImageData, scale = 1, probThreshold = 0.75, nmsThreshold = 0.5): Promise<FaceObject[]> => {
     if (imageData.width !== this.width || imageData.height !== this.height) {
@@ -178,7 +178,8 @@ export default class Retinaface {
       data[i + len * 2] = imageData.data[i * 4 + 2]
     }
 
-    const results = await this.session.run({ data: new Tensor('float32', data, [1, 3, this.height, this.width]) })
+    // eslint-disable-next-line new-cap
+    const results = await this.session.run({ data: new this.tensorClass('float32', data, [1, 3, this.height, this.width]) })
 
     const faceProposals: FaceObject[] = []
     await processStride(results, faceProposals, probThreshold, 32, [32, 16])
