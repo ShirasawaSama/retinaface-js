@@ -1,4 +1,4 @@
-# Retinaface-JS [![npm](https://img.shields.io/npm/v/retinaface)](https://www.npmjs.com/package/retinaface) [![GitHub](https://img.shields.io/github/license/shirasawa/retinaface-js)](LICENSE)
+# Retinaface-JS [![npm](https://img.shields.io/npm/v/retinaface)](https://www.npmjs.com/package/retinaface) [![GitHub](https://img.shields.io/github/license/ShirasawaSama/retinaface-js)](LICENSE)
 
 This is a JavaScript implementation of the Retinaface face detection algorithm. It is based on the [Retinaface](https://arxiv.org/abs/1905.00641) paper.
 
@@ -20,7 +20,7 @@ npm install retinaface onnxruntime-web
 import * as ort from 'onnxruntime-web'
 import Retinaface from 'retinaface'
 
-import modelPath from 'retinaface/mnet.25_v1.onnx?url'
+import modelPath from 'retinaface/mnet.25_v2.onnx?url'
 import imagePath from './R.jpg'
 
 ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/'

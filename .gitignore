@@ -1,4 +1,4 @@
 node_modules
-R.jpg
+/*.jpg
 dist
-index2.ts.w
+*.w

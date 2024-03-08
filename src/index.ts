@@ -34,7 +34,7 @@ const generateAnchors = (baseSize: number, ratios: [number], scales: [number, nu
   return anchors
 }
 
-const generateProposals = async (anchors: Array<[number, number, number, number]>, featStride: number, scoreT: Tensor, bboxT: Tensor, landmarkT: Tensor, probThreshold: number) => {
+const generateProposals = async (anchors: Array<[number, number, number, number]>, featStride: number, scoreT: Tensor, bboxT: Tensor, landmarkT: Tensor, probThreshold: number, scale: number) => {
   const bboxDims = bboxT.dims
   const w = bboxDims[3]
   const h = bboxDims[2]
@@ -88,14 +88,17 @@ const generateProposals = async (anchors: Array<[number, number, number, number]
           const x1 = pbCx + pbW * 0.5
           const y1 = pbCy + pbH * 0.5
 
+          const w2 = anchorW * scale + 1
+          const h2 = anchorH * scale + 1
+
           const obj: FaceObject = {
             rect: [x0, y0, x1, y1],
             landmarks: [
-              [cx + (anchorW + 1) * landmark[landmarkOffset + index + offset * 0], cy + (anchorH + 1) * landmark[landmarkOffset + index + offset * 1]],
-              [cx + (anchorW + 1) * landmark[landmarkOffset + index + offset * 2], cy + (anchorH + 1) * landmark[landmarkOffset + index + offset * 3]],
-              [cx + (anchorW + 1) * landmark[landmarkOffset + index + offset * 4], cy + (anchorH + 1) * landmark[landmarkOffset + index + offset * 5]],
-              [cx + (anchorW + 1) * landmark[landmarkOffset + index + offset * 6], cy + (anchorH + 1) * landmark[landmarkOffset + index + offset * 7]],
-              [cx + (anchorW + 1) * landmark[landmarkOffset + index + offset * 8], cy + (anchorH + 1) * landmark[landmarkOffset + index + offset * 9]]
+              [cx + w2 * landmark[landmarkOffset + index + offset * 0], cy + h2 * landmark[landmarkOffset + index + offset * 1]],
+              [cx + w2 * landmark[landmarkOffset + index + offset * 2], cy + h2 * landmark[landmarkOffset + index + offset * 3]],
+              [cx + w2 * landmark[landmarkOffset + index + offset * 4], cy + h2 * landmark[landmarkOffset + index + offset * 5]],
+              [cx + w2 * landmark[landmarkOffset + index + offset * 6], cy + h2 * landmark[landmarkOffset + index + offset * 7]],
+              [cx + w2 * landmark[landmarkOffset + index + offset * 8], cy + h2 * landmark[landmarkOffset + index + offset * 9]]
             ],
             prob
           }
@@ -113,7 +116,7 @@ const generateProposals = async (anchors: Array<[number, number, number, number]
   return faces
 }
 
-const processStride = async (results: InferenceSession.OnnxValueMapType, faceProposals: FaceObject[], probThreshold: number, stride: number, scales: [number, number]) => {
+const processStride = async (results: InferenceSession.OnnxValueMapType, faceProposals: FaceObject[], probThreshold: number, stride: number, scales: [number, number], scale: number) => {
   const score = results['face_rpn_cls_prob_reshape_stride' + stride]
   const bbox = results['face_rpn_bbox_pred_stride' + stride]
   const landmark = results['face_rpn_landmark_pred_stride' + stride]
@@ -122,7 +125,7 @@ const processStride = async (results: InferenceSession.OnnxValueMapType, facePro
   const featStride = stride
   const anchors = generateAnchors(baseSize, [1], scales)
 
-  faceProposals.push(...(await generateProposals(anchors, featStride, score, bbox, landmark, probThreshold)))
+  faceProposals.push(...(await generateProposals(anchors, featStride, score, bbox, landmark, probThreshold, scale)))
 }
 
 const nmsSortedBboxes = (faceObjects: FaceObject[], nmsThreshold: number) => {
@@ -162,7 +165,12 @@ export const createCanvas = (width: number, height: number) => {
 }
 
 export default class Retinaface {
-  public constructor (private readonly session: InferenceSession, private readonly tensorClass: typeof Tensor, public readonly width = 512, public readonly height = 512) {}
+  public constructor (
+    private readonly session: InferenceSession,
+    private readonly tensorClass: typeof Tensor,
+    public readonly width = 640, public readonly height = 640,
+    private readonly landmarksScale = 0.18181818
+  ) {}
 
   public detect = async (imageData: ImageData, scale = 1, probThreshold = 0.75, nmsThreshold = 0.5): Promise<FaceObject[]> => {
     if (imageData.width !== this.width || imageData.height !== this.height) {
@@ -182,9 +190,9 @@ export default class Retinaface {
     const results = await this.session.run({ data: new this.tensorClass('float32', data, [1, 3, this.height, this.width]) })
 
     const faceProposals: FaceObject[] = []
-    await processStride(results, faceProposals, probThreshold, 32, [32, 16])
-    await processStride(results, faceProposals, probThreshold, 16, [8, 4])
-    await processStride(results, faceProposals, probThreshold, 8, [2, 1])
+    await processStride(results, faceProposals, probThreshold, 32, [32, 16], this.landmarksScale)
+    await processStride(results, faceProposals, probThreshold, 16, [8, 4], this.landmarksScale)
+    await processStride(results, faceProposals, probThreshold, 8, [2, 1], this.landmarksScale)
 
     faceProposals.sort((a, b) => b.prob - a.prob)
 
